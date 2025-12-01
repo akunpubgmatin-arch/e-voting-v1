@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  TEACHER
+  COMMITTEE
+  ADMIN
+}
+
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  password      String
+  fullName      String
+  role          Role     @default(USER)
+  hasVotedOsis  Boolean  @default(false)
+  hasVotedMpk   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  votes         Vote[]
+
+  @@index([username])
+  @@index([role])
+}
+
+model Periode {
+  id         String      @id @default(cuid())
+  name       String
+  isActive   Boolean     @default(false)
+  startTime  DateTime?
+  endTime    DateTime?
+  candidates Candidate[]
+  votes      Vote[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([isActive])
+}
+
+model Candidate {
+  id        String   @id @default(cuid())
+  name      String
+  photo     String?
+  visi      String?
+  misi      String?
+  type      String   // "OSIS" or "MPK"
+  orderNumber Int    @default(1)
+  periodeId String
+  periode   Periode  @relation(fields: [periodeId], references: [id], onDelete: Cascade)
+  votes     Vote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([periodeId])
+  @@index([type])
+}
+
+model Vote {
+  id          String    @id @default(cuid())
+  userId      String
+  candidateId String
+  periodeId   String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  periode     Periode   @relation(fields: [periodeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, periodeId, candidateId])
+  @@index([periodeId])
+  @@index([candidateId])
+}
