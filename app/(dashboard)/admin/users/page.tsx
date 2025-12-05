@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import {
   useUsers,
   useCreateUser,
@@ -30,10 +30,11 @@ import {
   useImportUsers,
   type User,
 } from "@/lib/hooks/use-users"
-import { Plus, MoreHorizontal, Trash2, KeyRound, Upload, FileSpreadsheet } from "lucide-react"
+import { Plus, MoreHorizontal, Trash2, KeyRound, Upload, FileSpreadsheet, RotateCcw, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import { Separator } from "@/components/ui/separator"
+import { useMutation, useQueryClient } from "@tanstack/react-query" // Import React Query
 
 export default function UsersPage() {
   const { data: users, isLoading } = useUsers()
@@ -41,11 +42,20 @@ export default function UsersPage() {
   const deleteUser = useDeleteUser()
   const resetPassword = useResetPassword()
   const importUsers = useImportUsers()
+  const queryClient = useQueryClient() // Untuk refresh data setelah reset
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // State Dialogs
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isResetOpen, setIsResetOpen] = useState(false)
+  
+  // State Reset Voting
+  const [isResetVoteOpen, setIsResetVoteOpen] = useState(false) // Single user reset
+  const [isResetAllOpen, setIsResetAllOpen] = useState(false) // Reset all
+  const [resetConfirmationText, setResetConfirmationText] = useState("") // Input validasi RESET
+
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [newPassword, setNewPassword] = useState("")
   const [formData, setFormData] = useState({
@@ -56,6 +66,41 @@ export default function UsersPage() {
   })
 
   const voterUsers = users?.filter((u) => ["USER", "TEACHER"].includes(u.role)) || []
+
+  // --- MUTATION: Reset Single User Vote ---
+  const resetUserVote = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/users/${userId}/reset-vote`, { method: "POST" })
+      if (!res.ok) throw new Error("Gagal mereset voting user")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      toast.success("Status voting user berhasil direset")
+      setIsResetVoteOpen(false)
+      setSelectedUser(null)
+    },
+    onError: () => toast.error("Gagal mereset voting user"),
+  })
+
+  // --- MUTATION: Reset ALL Votes ---
+  const resetAllVotes = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/voting/reset-all`, { method: "POST" })
+      if (!res.ok) throw new Error("Gagal mereset semua data voting")
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] }) // Refresh stats dashboard juga
+      toast.success("Semua data voting berhasil direset")
+      setIsResetAllOpen(false)
+      setResetConfirmationText("")
+    },
+    onError: () => toast.error("Gagal mereset data voting"),
+  })
+
+  // --- HANDLERS ---
 
   const handleCreate = async () => {
     if (!formData.username || !formData.password || !formData.fullName) {
@@ -80,6 +125,20 @@ export default function UsersPage() {
     setIsResetOpen(false)
     setSelectedUser(null)
     setNewPassword("")
+  }
+
+  const handleResetSingleVote = async () => {
+    if (!selectedUser) return
+    await resetUserVote.mutateAsync(selectedUser.id)
+  }
+
+  const handleResetAllVotes = async () => {
+    // Validasi Teks "RESET"
+    if (resetConfirmationText !== "RESET") {
+      toast.error("Konfirmasi gagal. Ketik 'RESET' dengan huruf besar.")
+      return
+    }
+    await resetAllVotes.mutateAsync()
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,8 +237,25 @@ export default function UsersPage() {
               <KeyRound className="mr-2 h-4 w-4" />
               Reset Password
             </DropdownMenuItem>
+            
+            {/* Opsi Reset Vote Per User */}
+            {(user.hasVotedOsis || user.hasVotedMpk) && (
+              <DropdownMenuItem
+                className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+                onClick={() => {
+                  setSelectedUser(user)
+                  setIsResetVoteOpen(true)
+                }}
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset Voting Status
+              </DropdownMenuItem>
+            )}
+
+            <DropdownMenuSeparator />
+            
             <DropdownMenuItem
-              className="text-destructive"
+              className="text-destructive focus:text-destructive focus:bg-destructive/10"
               onClick={() => {
                 setSelectedUser(user)
                 setIsDeleteOpen(true)
@@ -198,18 +274,24 @@ export default function UsersPage() {
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Data Pemilih" }]} />
-      {/* Main Wrapper */}
       <div className="min-h-screen bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-1 flex-col gap-6">
             
-            {/* CONTAINER INDUK PUTIH */}
             <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              
-              {/* Header Page */}
               <div className="pb-2">
                 <PageHeader title="Data Pemilih" description="Kelola data siswa dan guru sebagai pemilih">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Tombol Reset Semua Vote (Baru) */}
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => setIsResetAllOpen(true)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Reset Semua Vote
+                    </Button>
+
                     <Button variant="outline" onClick={downloadTemplate}>
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
                       Template
@@ -229,7 +311,6 @@ export default function UsersPage() {
 
               <Separator />
 
-              {/* Card Tabel Flat & Tanpa Padding */}
               <Card className="bg-white border-gray-200 shadow-none p-0 gap-0 overflow-hidden">
                 <CardHeader className="px-6 py-4">
                   <CardTitle className="text-lg font-semibold text-gray-900">Daftar Pemilih</CardTitle>
@@ -250,11 +331,12 @@ export default function UsersPage() {
                 </CardContent>
               </Card>
             </div>
-            {/* END CONTAINER INDUK */}
 
           </div>
         </div>
       </div>
+
+      {/* --- DIALOGS --- */}
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -364,6 +446,71 @@ export default function UsersPage() {
           isDestructive
           isLoading={deleteUser.isPending}
         />
+
+        {/* --- FITUR BARU: RESET VOTE PER USER --- */}
+        <ConfirmDialog
+          open={isResetVoteOpen}
+          onOpenChange={setIsResetVoteOpen}
+          title="Reset Voting User"
+          description={`Apakah Anda yakin ingin mereset status voting untuk "${selectedUser?.fullName}"? User ini akan bisa memilih lagi (OSIS & MPK).`}
+          confirmText="Reset Voting"
+          onConfirm={handleResetSingleVote}
+          isDestructive
+          isLoading={resetUserVote.isPending}
+        />
+
+        {/* --- FITUR BARU: RESET SEMUA VOTE (DENGAN VALIDASI INPUT) --- */}
+        <Dialog open={isResetAllOpen} onOpenChange={(open) => {
+          if (!open) {
+            setIsResetAllOpen(false);
+            setResetConfirmationText(""); 
+          }
+        }}>
+          <DialogContent className="bg-white max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3 text-destructive mb-2">
+                <AlertTriangle className="h-6 w-6" />
+                <DialogTitle className="text-xl">Reset SEMUA Voting?</DialogTitle>
+              </div>
+              <DialogDescription className="text-gray-600">
+                Tindakan ini akan menghapus <strong>SELURUH DATA SUARA</strong> yang sudah masuk di database. 
+                Semua pemilih akan kembali ke status "Belum Memilih". 
+                <br /><br />
+                Tindakan ini <strong>TIDAK DAPAT DIBATALKAN</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="confirmText" className="text-gray-700 font-semibold">
+                  Ketik "RESET" untuk konfirmasi:
+                </Label>
+                <Input
+                  id="confirmText"
+                  value={resetConfirmationText}
+                  onChange={(e) => setResetConfirmationText(e.target.value)}
+                  placeholder="Ketik RESET disini..."
+                  className="bg-white border-red-200 focus:border-red-500 focus:ring-red-200"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsResetAllOpen(false)}>
+                Batal
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleResetAllVotes}
+                disabled={resetAllVotes.isPending || resetConfirmationText !== "RESET"}
+                className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                {resetAllVotes.isPending ? "Mereset..." : "Hapus Semua Suara"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
     </>
   )
 }
