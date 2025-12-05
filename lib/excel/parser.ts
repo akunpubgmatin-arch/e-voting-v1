@@ -1,8 +1,8 @@
-// lib/excel/parser.ts
 import * as XLSX from "xlsx"
 
 export interface ParsedUser {
   username: string
+  password?: string // Tambahkan field password (opsional)
   fullName: string
   role?: "USER" | "TEACHER"
 }
@@ -39,7 +39,7 @@ export function parseUsersFromExcel(file: File): Promise<ParseResult> {
         jsonData.forEach((row, index) => {
           const rowNum = index + 2
 
-          // MAPPING HEADER: Tambahkan NISN dan NIP
+          // Cek berbagai kemungkinan nama kolom
           const username = String(
             row.username || row.Username || 
             row.nis || row.NIS || row.nisn || row.NISN || // Handle Siswa
@@ -54,11 +54,9 @@ export function parseUsersFromExcel(file: File): Promise<ParseResult> {
           // Parsing Role
           let roleRaw = String(row.role || row.Role || row.ROLE || "").trim().toUpperCase()
           
-          // Logika Otomatisasi Role jika kolom Role kosong di Excel
+          // Logika Auto-Role jika kolom Role kosong
           if (!roleRaw) {
-             // Jika header mengandung NIP, asumsi Guru
              if (row.nip || row.NIP) roleRaw = "TEACHER"
-             // Jika header mengandung NISN, asumsi Siswa
              else if (row.nisn || row.NISN || row.nis || row.NIS) roleRaw = "USER"
           }
 
@@ -83,7 +81,11 @@ export function parseUsersFromExcel(file: File): Promise<ParseResult> {
             return
           }
 
-          users.push({ username, fullName, role })
+          // SET DEFAULT PASSWORD = USERNAME
+          // Ini memastikan password default sesuai dengan NIP/NISN
+          const password = username; 
+
+          users.push({ username, fullName, role, password })
         })
 
         resolve({

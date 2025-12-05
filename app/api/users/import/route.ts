@@ -29,17 +29,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Semua username sudah ada", count: 0 })
     }
 
-    // Hash default password
-    const defaultPassword = await hashPassword("password123")
+    // HAPUS DEFAULT PASSWORD HARDCODED "password123"
+    // const defaultPassword = await hashPassword("password123") <-- HAPUS INI
+
+    // Siapkan data untuk createMany
+    // Kita harus hash password satu per satu karena password setiap user beda (sesuai username)
+    // Prisma createMany tidak support hashing otomatis atau fungsi dinamis di dalamnya.
+    // Jadi kita harus map dulu datanya dengan password yang sudah di-hash.
+    
+    const usersToCreate = await Promise.all(
+      newUsers.map(async (u: { username: string; fullName: string; role?: string; password?: string }) => {
+        // Password default adalah password yang dikirim dari parser (yaitu username)
+        // Jika tidak ada, gunakan username sebagai fallback terakhir
+        const plainPassword = u.password || u.username;
+        const hashedPassword = await hashPassword(plainPassword);
+
+        return {
+          username: u.username,
+          password: hashedPassword,
+          fullName: u.fullName,
+          role: (u.role as "USER" | "TEACHER") || "USER",
+        };
+      })
+    );
 
     // Create users
     const result = await prisma.user.createMany({
-      data: newUsers.map((u: { username: string; fullName: string; role?: string }) => ({
-        username: u.username,
-        password: defaultPassword,
-        fullName: u.fullName,
-        role: (u.role as "USER" | "TEACHER") || "USER",
-      })),
+      data: usersToCreate,
       skipDuplicates: true,
     })
 
