@@ -6,6 +6,7 @@ import { useState, useRef } from "react"
 import { DashboardHeader } from "@/components/sidebar/dashboard-header"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable, Column } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -198,29 +199,51 @@ export default function UsersPage() {
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Data Pemilih" }]} />
-      <div className="flex flex-1 flex-col gap-6 p-6">
-        <PageHeader title="Data Pemilih" description="Kelola data siswa dan guru sebagai pemilih">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={downloadTemplate}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Download Template
-            </Button>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importUsers.isPending}>
-              <Upload className="mr-2 h-4 w-4" />
-              {importUsers.isPending ? "Importing..." : "Import Excel"}
-            </Button>
-            <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Pemilih
-            </Button>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-1 flex-col gap-6">
+            <PageHeader title="Data Pemilih" description="Kelola data siswa dan guru sebagai pemilih">
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={downloadTemplate}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Download Template
+                </Button>
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importUsers.isPending}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  {importUsers.isPending ? "Importing..." : "Import Excel"}
+                </Button>
+                <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tambah Pemilih
+                </Button>
+              </div>
+            </PageHeader>
+
+            <Card className="bg-white shadow-sm rounded-xl border border-gray-200">
+              <CardHeader className="px-6 py-4 border-b border-gray-200">
+                <CardTitle className="text-lg font-semibold text-gray-900">Daftar Pemilih</CardTitle>
+                <CardDescription className="text-sm text-gray-500">
+                  Kelola semua data pemilih terdaftar
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <DataTable<User>
+                  columns={columns}
+                  data={voterUsers}
+                  isLoading={isLoading}
+                  emptyMessage="Belum ada data pemilih"
+                  enablePagination={true}
+                  defaultPageSize={10}
+                />
+              </CardContent>
+            </Card>
           </div>
-        </PageHeader>
+        </div>
+      </div>
 
-        <DataTable<User> columns={columns} data={voterUsers} isLoading={isLoading} emptyMessage="Belum ada data pemilih" />
-
-        {/* Create Dialog */}
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      {/* Create Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Tambah Pemilih Baru</DialogTitle>
@@ -323,7 +346,6 @@ export default function UsersPage() {
           isDestructive
           isLoading={deleteUser.isPending}
         />
-      </div>
     </>
   )
 }

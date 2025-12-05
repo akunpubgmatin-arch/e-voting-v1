@@ -167,7 +167,14 @@ export default function PeriodePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <DataTable<Periode> columns={columns} data={periodes || []} isLoading={isLoading} emptyMessage="Belum ada periode" />
+                <DataTable<Periode>
+                  columns={columns}
+                  data={periodes || []}
+                  isLoading={isLoading}
+                  emptyMessage="Belum ada periode"
+                  enablePagination={true}
+                  defaultPageSize={10}
+                />
               </CardContent>
             </Card>
 

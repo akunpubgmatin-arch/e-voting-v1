@@ -4,6 +4,7 @@ import { useState } from "react"
 import { DashboardHeader } from "@/components/sidebar/dashboard-header"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable, Column } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -132,17 +133,40 @@ export default function AdministratorPage() {
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Administrator" }]} />
-      <div className="flex flex-1 flex-col gap-6 p-6">
-        <PageHeader title="Administrator" description="Kelola akun administrator dan panitia">
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Tambah Admin
-          </Button>
-        </PageHeader>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-1 flex-col gap-6">
+            <PageHeader title="Administrator" description="Kelola akun administrator dan panitia">
+              <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" />
+                Tambah Admin
+              </Button>
+            </PageHeader>
 
-        <DataTable<User> columns={columns} data={adminUsers} isLoading={isLoading} emptyMessage="Belum ada administrator" />
+            <Card className="bg-white shadow-sm rounded-xl border border-gray-200">
+              <CardHeader className="px-6 py-4 border-b border-gray-200">
+                <CardTitle className="text-lg font-semibold text-gray-900">Daftar Administrator</CardTitle>
+                <CardDescription className="text-sm text-gray-500">
+                  Kelola semua akun administrator dan panitia
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <DataTable<User>
+                  columns={columns}
+                  data={adminUsers}
+                  isLoading={isLoading}
+                  emptyMessage="Belum ada administrator"
+                  enablePagination={true}
+                  defaultPageSize={10}
+                  pageSizeOptions={[5, 10, 25, 50, 100]}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
 
-        {/* Create Dialog */}
+      {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogContent>
             <DialogHeader>
@@ -246,7 +270,6 @@ export default function AdministratorPage() {
           isDestructive
           isLoading={deleteUser.isPending}
         />
-      </div>
     </>
   )
 }
