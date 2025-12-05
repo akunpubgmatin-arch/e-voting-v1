@@ -28,6 +28,7 @@ import {
 } from "@/lib/hooks/use-periodes"
 import { Plus, MoreHorizontal, Pencil, Trash2, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
+import { Separator } from "@/components/ui/separator"
 
 export default function PeriodePage() {
   const { data: periodes, isLoading } = usePeriodes()
@@ -149,38 +150,55 @@ export default function PeriodePage() {
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Periode" }]} />
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-1 flex-col gap-6">
-            <PageHeader title="Manajemen Periode" description="Kelola periode pemilihan OSIS dan MPK">
-              <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Periode
-              </Button>
-            </PageHeader>
+            
+            {/* CONTAINER INDUK BARU */}
+            <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              
+              {/* Header Page dimasukkan ke dalam container */}
+              <div className="pb-2">
+                <PageHeader title="Manajemen Periode" description="Kelola periode pemilihan OSIS dan MPK">
+                  <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Tambah Periode
+                  </Button>
+                </PageHeader>
+              </div>
 
-            <Card className="bg-white shadow-sm rounded-xl border border-gray-200">
-              <CardHeader className="px-6 py-4 border-b border-gray-200">
-                <CardTitle className="text-lg font-semibold text-gray-900">Daftar Periode</CardTitle>
-                <CardDescription className="text-sm text-gray-500">
-                  Kelola semua periode pemilihan yang tersedia
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <DataTable<Periode>
-                  columns={columns}
-                  data={periodes || []}
-                  isLoading={isLoading}
-                  emptyMessage="Belum ada periode"
-                  enablePagination={true}
-                  defaultPageSize={10}
-                />
-              </CardContent>
-            </Card>
+              {/* Separator pemisah */}
+              <Separator />
+
+              {/* PERUBAHAN DISINI:
+                1. Menambahkan `p-0 gap-0` untuk menghapus padding bawaan (py-6) dan gap bawaan.
+                2. Menghapus `border-b border-gray-200` pada CardHeader agar tidak ada garis pembatas.
+              */}
+              <Card className="bg-white border-gray-200 shadow-none p-0 gap-0 overflow-hidden">
+                <CardHeader className="px-6 py-4">
+                  <CardTitle className="text-lg font-semibold text-gray-900">Daftar Periode</CardTitle>
+                  <CardDescription className="text-sm text-gray-500">
+                    Kelola semua periode pemilihan yang tersedia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <DataTable<Periode>
+                    columns={columns}
+                    data={periodes || []}
+                    isLoading={isLoading}
+                    emptyMessage="Belum ada periode"
+                    enablePagination={true}
+                    defaultPageSize={10}
+                  />
+                </CardContent>
+              </Card>
+
+            </div>
+            {/* END CONTAINER INDUK */}
 
             {/* Create Dialog */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-              <DialogContent>
+              <DialogContent className="bg-white">
                 <DialogHeader>
                   <DialogTitle>Tambah Periode Baru</DialogTitle>
                   <DialogDescription>Buat periode pemilihan baru untuk OSIS dan MPK</DialogDescription>
@@ -193,6 +211,7 @@ export default function PeriodePage() {
                       placeholder="Contoh: Pemilihan 2024/2025"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
+                      className="bg-white placeholder:text-gray-400"
                     />
                   </div>
                 </div>
@@ -209,7 +228,7 @@ export default function PeriodePage() {
 
             {/* Edit Dialog */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-              <DialogContent>
+              <DialogContent className="bg-white">
                 <DialogHeader>
                   <DialogTitle>Edit Periode</DialogTitle>
                   <DialogDescription>Ubah nama periode pemilihan</DialogDescription>
@@ -217,7 +236,12 @@ export default function PeriodePage() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="editName">Nama Periode</Label>
-                    <Input id="editName" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                    <Input 
+                      id="editName" 
+                      value={newName} 
+                      onChange={(e) => setNewName(e.target.value)} 
+                      className="bg-white placeholder:text-gray-400"
+                    />
                   </div>
                 </div>
                 <DialogFooter>
@@ -247,4 +271,4 @@ export default function PeriodePage() {
       </div>
     </>
   )
-}
+} 

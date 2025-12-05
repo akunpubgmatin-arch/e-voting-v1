@@ -15,6 +15,7 @@ import { useQuickCount } from "@/lib/hooks/use-voting"
 import { Users, Vote, BarChart3, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator" // 1. Import Separator
 
 export default function AdminQuickCountPage() {
   const { data: periodes } = usePeriodes()
@@ -40,187 +41,223 @@ export default function AdminQuickCountPage() {
       value: r.voteCount,
     })) || []
 
+  // 2. Style untuk inner card (Flat)
+  const innerCardStyle = "bg-white border-gray-200 shadow-none"
+
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Quick Count" }]} />
-      <div className="flex flex-1 flex-col gap-6 p-6">
-        <PageHeader title="Quick Count" description="Hasil perolehan suara realtime">
-          <div className="flex items-center gap-2">
-            <Select value={selectedPeriodeId} onValueChange={setSelectedPeriodeId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Pilih Periode" />
-              </SelectTrigger>
-              <SelectContent>
-                {periodes?.map((periode) => (
-                  <SelectItem key={periode.id} value={periode.id}>
-                    {periode.name} {periode.isActive && "(Aktif)"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
-        </PageHeader>
-
-        {!selectedPeriodeId ? (
-          <EmptyState
-            icon={BarChart3}
-            title="Pilih Periode"
-            description="Silakan pilih periode untuk melihat hasil quick count"
-          />
-        ) : isLoading ? (
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-3">
-              {[...Array(3)].map((_, i) => (
-                <Card key={i}>
-                  <CardHeader className="pb-2">
-                    <Skeleton className="h-4 w-24" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-8 w-16" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <StatsCard
-                title="Total Pemilih"
-                value={quickCount?.totalVoters || 0}
-                icon={Users}
-                description="Siswa & Guru terdaftar"
-              />
-              <StatsCard
-                title="Sudah Memilih OSIS"
-                value={quickCount?.votedOsis || 0}
-                icon={Vote}
-                description={`${quickCount?.totalVoters ? ((quickCount.votedOsis / quickCount.totalVoters) * 100).toFixed(1) : 0}% partisipasi`}
-              />
-              <StatsCard
-                title="Sudah Memilih MPK"
-                value={quickCount?.votedMpk || 0}
-                icon={Vote}
-                description={`${quickCount?.totalVoters ? ((quickCount.votedMpk / quickCount.totalVoters) * 100).toFixed(1) : 0}% partisipasi`}
-              />
-            </div>
-
-            {/* Charts */}
-            <Tabs defaultValue="osis" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="osis">OSIS</TabsTrigger>
-                <TabsTrigger value="mpk">MPK</TabsTrigger>
-              </TabsList>
-              <TabsContent value="osis">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <PieChart
-                    data={osisChartData}
-                    title="Distribusi Suara OSIS"
-                    description="Persentase perolehan suara setiap kandidat"
-                  />
-                  <BarChart data={osisChartData} title="Perolehan Suara OSIS" description="Jumlah suara per kandidat" />
-                </div>
-                {osisChartData.length === 0 && (
-                  <EmptyState
-                    icon={Vote}
-                    title="Belum Ada Suara"
-                    description="Belum ada suara yang masuk untuk pemilihan OSIS"
-                  />
-                )}
-              </TabsContent>
-              <TabsContent value="mpk">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <PieChart
-                    data={mpkChartData}
-                    title="Distribusi Suara MPK"
-                    description="Persentase perolehan suara setiap kandidat"
-                  />
-                  <BarChart data={mpkChartData} title="Perolehan Suara MPK" description="Jumlah suara per kandidat" />
-                </div>
-                {mpkChartData.length === 0 && (
-                  <EmptyState
-                    icon={Vote}
-                    title="Belum Ada Suara"
-                    description="Belum ada suara yang masuk untuk pemilihan MPK"
-                  />
-                )}
-              </TabsContent>
-            </Tabs>
-
-            {/* Results Table */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hasil OSIS</CardTitle>
-                  <CardDescription>Peringkat kandidat OSIS</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {quickCount?.osisResults
-                      .sort((a, b) => b.voteCount - a.voteCount)
-                      .map((result, index) => (
-                        <div
-                          key={result.candidateId}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                              {index + 1}
-                            </span>
-                            <span className="font-medium">{result.candidateName}</span>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold">{result.voteCount}</p>
-                            <p className="text-xs text-muted-foreground">{result.percentage.toFixed(1)}%</p>
-                          </div>
-                        </div>
-                      ))}
-                    {quickCount?.osisResults.length === 0 && (
-                      <p className="text-center text-muted-foreground py-4">Belum ada data</p>
-                    )}
+      {/* 3. Main Wrapper */}
+      <div className="min-h-screen bg-gray-50/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-1 flex-col gap-6">
+            
+            {/* 4. CONTAINER INDUK PUTIH */}
+            <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              
+              {/* Header */}
+              <div className="pb-2">
+                <PageHeader title="Quick Count" description="Hasil perolehan suara realtime">
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedPeriodeId} onValueChange={setSelectedPeriodeId}>
+                      <SelectTrigger className="w-[200px] bg-white">
+                        <SelectValue placeholder="Pilih Periode" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        {periodes?.map((periode) => (
+                          <SelectItem key={periode.id} value={periode.id}>
+                            {periode.name} {periode.isActive && "(Aktif)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+                      <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </PageHeader>
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hasil MPK</CardTitle>
-                  <CardDescription>Peringkat kandidat MPK</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {quickCount?.mpkResults
-                      .sort((a, b) => b.voteCount - a.voteCount)
-                      .map((result, index) => (
-                        <div
-                          key={result.candidateId}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                              {index + 1}
-                            </span>
-                            <span className="font-medium">{result.candidateName}</span>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold">{result.voteCount}</p>
-                            <p className="text-xs text-muted-foreground">{result.percentage.toFixed(1)}%</p>
-                          </div>
-                        </div>
-                      ))}
-                    {quickCount?.mpkResults.length === 0 && (
-                      <p className="text-center text-muted-foreground py-4">Belum ada data</p>
-                    )}
+              <Separator />
+
+              {/* Konten Utama */}
+              {!selectedPeriodeId ? (
+                <EmptyState
+                  icon={BarChart3}
+                  title="Pilih Periode"
+                  description="Silakan pilih periode untuk melihat hasil quick count"
+                />
+              ) : isLoading ? (
+                <div className="space-y-6">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {[...Array(3)].map((_, i) => (
+                      <Card key={i} className={innerCardStyle}>
+                        <CardHeader className="pb-2">
+                          <Skeleton className="h-4 w-24" />
+                        </CardHeader>
+                        <CardContent>
+                          <Skeleton className="h-8 w-16" />
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              ) : (
+                <>
+                  {/* Stats Cards - Flat */}
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <StatsCard
+                      title="Total Pemilih"
+                      value={quickCount?.totalVoters || 0}
+                      icon={Users}
+                      description="Siswa & Guru terdaftar"
+                      className={innerCardStyle}
+                    />
+                    <StatsCard
+                      title="Sudah Memilih OSIS"
+                      value={quickCount?.votedOsis || 0}
+                      icon={Vote}
+                      description={`${quickCount?.totalVoters ? ((quickCount.votedOsis / quickCount.totalVoters) * 100).toFixed(1) : 0}% partisipasi`}
+                      className={innerCardStyle}
+                    />
+                    <StatsCard
+                      title="Sudah Memilih MPK"
+                      value={quickCount?.votedMpk || 0}
+                      icon={Vote}
+                      description={`${quickCount?.totalVoters ? ((quickCount.votedMpk / quickCount.totalVoters) * 100).toFixed(1) : 0}% partisipasi`}
+                      className={innerCardStyle}
+                    />
+                  </div>
+
+                  {/* Charts */}
+                  <Tabs defaultValue="osis" className="space-y-4">
+                    <TabsList>
+                      <TabsTrigger value="osis">OSIS</TabsTrigger>
+                      <TabsTrigger value="mpk">MPK</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="osis">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <PieChart
+                          data={osisChartData}
+                          title="Distribusi Suara OSIS"
+                          description="Persentase perolehan suara setiap kandidat"
+                          className={innerCardStyle}
+                        />
+                        <BarChart 
+                          data={osisChartData} 
+                          title="Perolehan Suara OSIS" 
+                          description="Jumlah suara per kandidat" 
+                          className={innerCardStyle}
+                        />
+                      </div>
+                      {osisChartData.length === 0 && (
+                        <EmptyState
+                          icon={Vote}
+                          title="Belum Ada Suara"
+                          description="Belum ada suara yang masuk untuk pemilihan OSIS"
+                        />
+                      )}
+                    </TabsContent>
+                    <TabsContent value="mpk">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <PieChart
+                          data={mpkChartData}
+                          title="Distribusi Suara MPK"
+                          description="Persentase perolehan suara setiap kandidat"
+                          className={innerCardStyle}
+                        />
+                        <BarChart 
+                          data={mpkChartData} 
+                          title="Perolehan Suara MPK" 
+                          description="Jumlah suara per kandidat" 
+                          className={innerCardStyle}
+                        />
+                      </div>
+                      {mpkChartData.length === 0 && (
+                        <EmptyState
+                          icon={Vote}
+                          title="Belum Ada Suara"
+                          description="Belum ada suara yang masuk untuk pemilihan MPK"
+                        />
+                      )}
+                    </TabsContent>
+                  </Tabs>
+
+                  {/* Results Table - Flat */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card className={innerCardStyle}>
+                      <CardHeader>
+                        <CardTitle>Hasil OSIS</CardTitle>
+                        <CardDescription>Peringkat kandidat OSIS</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {quickCount?.osisResults
+                            .sort((a, b) => b.voteCount - a.voteCount)
+                            .map((result, index) => (
+                              <div
+                                key={result.candidateId}
+                                className="flex items-center justify-between p-3 rounded-lg bg-gray-50/50 border border-gray-100"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                                    {index + 1}
+                                  </span>
+                                  <span className="font-medium">{result.candidateName}</span>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold">{result.voteCount}</p>
+                                  <p className="text-xs text-muted-foreground">{result.percentage.toFixed(1)}%</p>
+                                </div>
+                              </div>
+                            ))}
+                          {quickCount?.osisResults.length === 0 && (
+                            <p className="text-center text-muted-foreground py-4">Belum ada data</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className={innerCardStyle}>
+                      <CardHeader>
+                        <CardTitle>Hasil MPK</CardTitle>
+                        <CardDescription>Peringkat kandidat MPK</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {quickCount?.mpkResults
+                            .sort((a, b) => b.voteCount - a.voteCount)
+                            .map((result, index) => (
+                              <div
+                                key={result.candidateId}
+                                className="flex items-center justify-between p-3 rounded-lg bg-gray-50/50 border border-gray-100"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                                    {index + 1}
+                                  </span>
+                                  <span className="font-medium">{result.candidateName}</span>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold">{result.voteCount}</p>
+                                  <p className="text-xs text-muted-foreground">{result.percentage.toFixed(1)}%</p>
+                                </div>
+                              </div>
+                            ))}
+                          {quickCount?.mpkResults.length === 0 && (
+                            <p className="text-center text-muted-foreground py-4">Belum ada data</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              )}
             </div>
-          </>
-        )}
+            {/* END CONTAINER INDUK */}
+
+          </div>
+        </div>
       </div>
     </>
   )

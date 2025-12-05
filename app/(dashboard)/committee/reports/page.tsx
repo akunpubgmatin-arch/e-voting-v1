@@ -16,6 +16,7 @@ import { FileSpreadsheet, FileText, Download, Users } from "lucide-react"
 import * as XLSX from "xlsx"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 import { toast } from "sonner"
+import { Separator } from "@/components/ui/separator" // 1. Import Separator
 
 export default function CommitteeReportsPage() {
   const { data: periodes } = usePeriodes()
@@ -32,6 +33,9 @@ export default function CommitteeReportsPage() {
   }
 
   const voters = users?.filter((u) => ["USER", "TEACHER"].includes(u.role)) || []
+
+  // 2. Style untuk inner card (Flat)
+  const innerCardStyle = "bg-white border-gray-200 shadow-none"
 
   const columns: Column<User>[] = [
     {
@@ -204,88 +208,107 @@ export default function CommitteeReportsPage() {
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Panitia", href: "/committee" }, { label: "Laporan" }]} />
-      <div className="flex flex-1 flex-col gap-6 p-6">
-        <PageHeader title="Laporan" description="Download laporan pemilihan">
-          <Select value={selectedPeriodeId} onValueChange={setSelectedPeriodeId}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Pilih Periode" />
-            </SelectTrigger>
-            <SelectContent>
-              {periodes?.map((periode) => (
-                <SelectItem key={periode.id} value={periode.id}>
-                  {periode.name} {periode.isActive && "(Aktif)"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </PageHeader>
+      {/* 3. Main Wrapper */}
+      <div className="min-h-screen bg-gray-50/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-1 flex-col gap-6">
+            
+            {/* 4. CONTAINER INDUK PUTIH */}
+            <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              
+              {/* Header */}
+              <div className="pb-2">
+                <PageHeader title="Laporan" description="Download laporan pemilihan">
+                  <Select value={selectedPeriodeId} onValueChange={setSelectedPeriodeId}>
+                    <SelectTrigger className="w-[200px] bg-white">
+                      <SelectValue placeholder="Pilih Periode" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {periodes?.map((periode) => (
+                        <SelectItem key={periode.id} value={periode.id}>
+                          {periode.name} {periode.isActive && "(Aktif)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </PageHeader>
+              </div>
 
-        {!selectedPeriodeId ? (
-          <EmptyState
-            icon={FileText}
-            title="Pilih Periode"
-            description="Silakan pilih periode untuk melihat dan mengunduh laporan"
-          />
-        ) : (
-          <>
-            {/* Export Cards */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
-                    Export Data Pemilih
-                  </CardTitle>
-                  <CardDescription>Download daftar pemilih beserta status voting dalam format Excel</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={exportVotersToExcel} className="w-full">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Excel
-                  </Button>
-                </CardContent>
-              </Card>
+              <Separator />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-red-600" />
-                    Export Quick Count
-                  </CardTitle>
-                  <CardDescription>Download hasil quick count dalam format PDF</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={exportQuickCountToPDF} className="w-full">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Voters Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  Daftar Pemilih
-                </CardTitle>
-                <CardDescription>Status voting semua pemilih terdaftar</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataTable<User>
-                  columns={columns}
-                  data={voters}
-                  isLoading={usersLoading}
-                  emptyMessage="Belum ada data pemilih"
-                  enablePagination={true}
-                  defaultPageSize={10}
-                  pageSizeOptions={[5, 10, 25, 50, 100]}
+              {!selectedPeriodeId ? (
+                <EmptyState
+                  icon={FileText}
+                  title="Pilih Periode"
+                  description="Silakan pilih periode untuk melihat dan mengunduh laporan"
                 />
-              </CardContent>
-            </Card>
-          </>
-        )}
+              ) : (
+                <>
+                  {/* Export Cards - Flat Style */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card className={innerCardStyle}>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                          Export Data Pemilih
+                        </CardTitle>
+                        <CardDescription>Download daftar pemilih beserta status voting dalam format Excel</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button onClick={exportVotersToExcel} className="w-full">
+                          <Download className="mr-2 h-4 w-4" />
+                          Download Excel
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className={innerCardStyle}>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-red-600" />
+                          Export Quick Count
+                        </CardTitle>
+                        <CardDescription>Download hasil quick count dalam format PDF</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button onClick={exportQuickCountToPDF} className="w-full">
+                          <Download className="mr-2 h-4 w-4" />
+                          Download PDF
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Voters Table - Flat & Seamless */}
+                  <Card className="bg-white border-gray-200 shadow-none p-0 gap-0 overflow-hidden">
+                    <CardHeader className="px-6 py-4">
+                      <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                        <Users className="h-5 w-5 text-primary" />
+                        Daftar Pemilih
+                      </CardTitle>
+                      <CardDescription className="text-sm text-gray-500">
+                        Status voting semua pemilih terdaftar
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <DataTable<User>
+                        columns={columns}
+                        data={voters}
+                        isLoading={usersLoading}
+                        emptyMessage="Belum ada data pemilih"
+                        enablePagination={true}
+                        defaultPageSize={10}
+                        pageSizeOptions={[5, 10, 25, 50, 100]}
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+            {/* END CONTAINER INDUK */}
+
+          </div>
+        </div>
       </div>
     </>
   )

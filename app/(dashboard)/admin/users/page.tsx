@@ -33,6 +33,7 @@ import {
 import { Plus, MoreHorizontal, Trash2, KeyRound, Upload, FileSpreadsheet } from "lucide-react"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
+import { Separator } from "@/components/ui/separator"
 
 export default function UsersPage() {
   const { data: users, isLoading } = useUsers()
@@ -96,7 +97,6 @@ export default function UsersPage() {
         return
       }
 
-      // Validate data
       const validData = jsonData.filter((row) => row.username && row.fullName)
 
       if (validData.length === 0) {
@@ -109,7 +109,6 @@ export default function UsersPage() {
       toast.error("Gagal membaca file Excel")
     }
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -169,7 +168,7 @@ export default function UsersPage() {
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="bg-white">
             <DropdownMenuItem
               onClick={() => {
                 setSelectedUser(user)
@@ -199,53 +198,67 @@ export default function UsersPage() {
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Data Pemilih" }]} />
-      <div className="min-h-screen bg-gray-50">
+      {/* Main Wrapper */}
+      <div className="min-h-screen bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-1 flex-col gap-6">
-            <PageHeader title="Data Pemilih" description="Kelola data siswa dan guru sebagai pemilih">
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={downloadTemplate}>
-                  <FileSpreadsheet className="mr-2 h-4 w-4" />
-                  Download Template
-                </Button>
-                <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importUsers.isPending}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  {importUsers.isPending ? "Importing..." : "Import Excel"}
-                </Button>
-                <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Tambah Pemilih
-                </Button>
+            
+            {/* CONTAINER INDUK PUTIH */}
+            <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              
+              {/* Header Page */}
+              <div className="pb-2">
+                <PageHeader title="Data Pemilih" description="Kelola data siswa dan guru sebagai pemilih">
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={downloadTemplate}>
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Template
+                    </Button>
+                    <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importUsers.isPending}>
+                      <Upload className="mr-2 h-4 w-4" />
+                      {importUsers.isPending ? "Importing..." : "Import"}
+                    </Button>
+                    <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Tambah
+                    </Button>
+                  </div>
+                </PageHeader>
               </div>
-            </PageHeader>
 
-            <Card className="bg-white shadow-sm rounded-xl border border-gray-200">
-              <CardHeader className="px-6 py-4 border-b border-gray-200">
-                <CardTitle className="text-lg font-semibold text-gray-900">Daftar Pemilih</CardTitle>
-                <CardDescription className="text-sm text-gray-500">
-                  Kelola semua data pemilih terdaftar
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <DataTable<User>
-                  columns={columns}
-                  data={voterUsers}
-                  isLoading={isLoading}
-                  emptyMessage="Belum ada data pemilih"
-                  enablePagination={true}
-                  defaultPageSize={10}
-                  pageSizeOptions={[5, 10, 25, 50, 100]}
-                />
-              </CardContent>
-            </Card>
+              <Separator />
+
+              {/* Card Tabel Flat & Tanpa Padding */}
+              <Card className="bg-white border-gray-200 shadow-none p-0 gap-0 overflow-hidden">
+                <CardHeader className="px-6 py-4">
+                  <CardTitle className="text-lg font-semibold text-gray-900">Daftar Pemilih</CardTitle>
+                  <CardDescription className="text-sm text-gray-500">
+                    Kelola semua data pemilih terdaftar
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <DataTable<User>
+                    columns={columns}
+                    data={voterUsers}
+                    isLoading={isLoading}
+                    emptyMessage="Belum ada data pemilih"
+                    enablePagination={true}
+                    defaultPageSize={10}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+            {/* END CONTAINER INDUK */}
+
           </div>
         </div>
       </div>
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent>
+          <DialogContent className="bg-white">
             <DialogHeader>
               <DialogTitle>Tambah Pemilih Baru</DialogTitle>
               <DialogDescription>Tambahkan data siswa atau guru sebagai pemilih</DialogDescription>
@@ -258,6 +271,7 @@ export default function UsersPage() {
                   placeholder="Username untuk login"
                   value={formData.username}
                   onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
+                  className="bg-white placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
@@ -268,6 +282,7 @@ export default function UsersPage() {
                   placeholder="Password untuk login"
                   value={formData.password}
                   onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                  className="bg-white placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
@@ -277,6 +292,7 @@ export default function UsersPage() {
                   placeholder="Nama lengkap"
                   value={formData.fullName}
                   onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
+                  className="bg-white placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
@@ -285,10 +301,10 @@ export default function UsersPage() {
                   value={formData.role}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="USER">Siswa</SelectItem>
                     <SelectItem value="TEACHER">Guru</SelectItem>
                   </SelectContent>
@@ -308,7 +324,7 @@ export default function UsersPage() {
 
         {/* Reset Password Dialog */}
         <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-          <DialogContent>
+          <DialogContent className="bg-white">
             <DialogHeader>
               <DialogTitle>Reset Password</DialogTitle>
               <DialogDescription>Reset password untuk {selectedUser?.fullName}</DialogDescription>
@@ -322,6 +338,7 @@ export default function UsersPage() {
                   placeholder="Masukkan password baru"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  className="bg-white placeholder:text-gray-400"
                 />
               </div>
             </div>

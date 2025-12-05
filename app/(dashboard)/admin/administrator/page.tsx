@@ -23,6 +23,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useUsers, useCreateUser, useDeleteUser, useResetPassword, type User } from "@/lib/hooks/use-users"
 import { Plus, MoreHorizontal, Trash2, KeyRound } from "lucide-react"
 import { toast } from "sonner"
+import { Separator } from "@/components/ui/separator" // 1. Import Separator
 
 export default function AdministratorPage() {
   const { data: users, isLoading } = useUsers()
@@ -103,7 +104,7 @@ export default function AdministratorPage() {
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="bg-white">
             <DropdownMenuItem
               onClick={() => {
                 setSelectedUser(user)
@@ -133,42 +134,56 @@ export default function AdministratorPage() {
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Administrator" }]} />
-      <div className="min-h-screen bg-gray-50">
+      {/* 2. Main Wrapper */}
+      <div className="min-h-screen bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-1 flex-col gap-6">
-            <PageHeader title="Administrator" description="Kelola akun administrator dan panitia">
-              <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Admin
-              </Button>
-            </PageHeader>
+            
+            {/* 3. CONTAINER INDUK PUTIH */}
+            <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              
+              {/* Header Page */}
+              <div className="pb-2">
+                <PageHeader title="Administrator" description="Kelola akun administrator dan panitia">
+                  <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Tambah Admin
+                  </Button>
+                </PageHeader>
+              </div>
 
-            <Card className="bg-white shadow-sm rounded-xl border border-gray-200">
-              <CardHeader className="px-6 py-4 border-b border-gray-200">
-                <CardTitle className="text-lg font-semibold text-gray-900">Daftar Administrator</CardTitle>
-                <CardDescription className="text-sm text-gray-500">
-                  Kelola semua akun administrator dan panitia
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <DataTable<User>
-                  columns={columns}
-                  data={adminUsers}
-                  isLoading={isLoading}
-                  emptyMessage="Belum ada administrator"
-                  enablePagination={true}
-                  defaultPageSize={10}
-                  pageSizeOptions={[5, 10, 25, 50, 100]}
-                />
-              </CardContent>
-            </Card>
+              <Separator />
+
+              {/* Card Tabel Flat */}
+              <Card className="bg-white border-gray-200 shadow-none p-0 gap-0 overflow-hidden">
+                <CardHeader className="px-6 py-4">
+                  <CardTitle className="text-lg font-semibold text-gray-900">Daftar Administrator</CardTitle>
+                  <CardDescription className="text-sm text-gray-500">
+                    Kelola semua akun administrator dan panitia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <DataTable<User>
+                    columns={columns}
+                    data={adminUsers}
+                    isLoading={isLoading}
+                    emptyMessage="Belum ada administrator"
+                    enablePagination={true}
+                    defaultPageSize={10}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+            {/* END CONTAINER INDUK */}
+
           </div>
         </div>
       </div>
 
       {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent>
+          <DialogContent className="bg-white">
             <DialogHeader>
               <DialogTitle>Tambah Administrator</DialogTitle>
               <DialogDescription>Tambahkan akun administrator atau panitia baru</DialogDescription>
@@ -181,6 +196,7 @@ export default function AdministratorPage() {
                   placeholder="Username untuk login"
                   value={formData.username}
                   onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
+                  className="bg-white placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
@@ -191,6 +207,7 @@ export default function AdministratorPage() {
                   placeholder="Password untuk login"
                   value={formData.password}
                   onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                  className="bg-white placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
@@ -200,6 +217,7 @@ export default function AdministratorPage() {
                   placeholder="Nama lengkap"
                   value={formData.fullName}
                   onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
+                  className="bg-white placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
@@ -208,10 +226,10 @@ export default function AdministratorPage() {
                   value={formData.role}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="ADMIN">Administrator</SelectItem>
                     <SelectItem value="COMMITTEE">Panitia</SelectItem>
                   </SelectContent>
@@ -231,7 +249,7 @@ export default function AdministratorPage() {
 
         {/* Reset Password Dialog */}
         <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-          <DialogContent>
+          <DialogContent className="bg-white">
             <DialogHeader>
               <DialogTitle>Reset Password</DialogTitle>
               <DialogDescription>Reset password untuk {selectedUser?.fullName}</DialogDescription>
@@ -245,6 +263,7 @@ export default function AdministratorPage() {
                   placeholder="Masukkan password baru"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  className="bg-white placeholder:text-gray-400"
                 />
               </div>
             </div>
