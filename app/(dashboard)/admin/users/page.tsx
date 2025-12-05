@@ -235,6 +235,7 @@ export default function UsersPage() {
                   emptyMessage="Belum ada data pemilih"
                   enablePagination={true}
                   defaultPageSize={10}
+                  pageSizeOptions={[5, 10, 25, 50, 100]}
                 />
               </CardContent>
             </Card>
