@@ -158,17 +158,25 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="border-b border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border/50 p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild className="hover:bg-transparent hover:text-sidebar-primary">
               <Link href="/" className="flex items-center gap-3">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Vote className="size-4" />
+                {/* LOGO SEKOLAH */}
+                {/* Pastikan file logo.png sudah ada di folder /public */}
+                <div className="flex aspect-square size-10 items-center justify-center">
+                  <img 
+                    src="/logo-sekolah-smpn-cibalong.png" 
+                    alt="Logo SMPN 1 Cibalong" 
+                    className="size-full object-contain"
+                  />
                 </div>
+                
+                {/* TEKS IDENTITAS */}
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">E-Voting</span>
-                  <span className="text-xs text-muted-foreground">OSIS & MPK</span>
+                  <span className="font-bold text-base">SMPN 1 Cibalong</span>
+                  <span className="text-xs text-muted-foreground font-medium">E-Voting OSIS & MPK</span>
                 </div>
               </Link>
             </SidebarMenuButton>
