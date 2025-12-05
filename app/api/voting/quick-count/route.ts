@@ -64,7 +64,7 @@ export async function GET(req: Request) {
 
     const osisResults = osisCandidates.map((c) => ({
       candidateId: c.id,
-      candidateName: c.name,
+      candidateName: `${c.chairmanName} & ${c.viceChairmanName}`,
       type: c.type,
       voteCount: c._count.votes,
       percentage: totalOsisVotes > 0 ? (c._count.votes / totalOsisVotes) * 100 : 0,
@@ -72,7 +72,7 @@ export async function GET(req: Request) {
 
     const mpkResults = mpkCandidates.map((c) => ({
       candidateId: c.id,
-      candidateName: c.name,
+      candidateName: `${c.chairmanName} & ${c.viceChairmanName}`,
       type: c.type,
       voteCount: c._count.votes,
       percentage: totalMpkVotes > 0 ? (c._count.votes / totalMpkVotes) * 100 : 0,

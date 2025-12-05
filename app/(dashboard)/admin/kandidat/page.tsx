@@ -31,6 +31,7 @@ import {
   type Candidate,
 } from "@/lib/hooks/use-candidates"
 import { Plus, Pencil, Trash2, UserCircle } from "lucide-react"
+import { toast } from "sonner"
 
 export default function KandidatPage() {
   const { data: periodes } = usePeriodes()
@@ -44,8 +45,11 @@ export default function KandidatPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState("")
   const [formData, setFormData] = useState({
-    name: "",
+    chairmanName: "",
+    viceChairmanName: "",
     photo: "",
     visi: "",
     misi: "",
@@ -55,13 +59,50 @@ export default function KandidatPage() {
 
   const resetForm = () => {
     setFormData({
-      name: "",
+      chairmanName: "",
+      viceChairmanName: "",
       photo: "",
       visi: "",
       misi: "",
       type: "OSIS",
       orderNumber: 1,
     })
+    setPreviewUrl("")
+  }
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file size (max 4MB)
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 4MB")
+      return
+    }
+
+    setIsUploading(true)
+
+    try {
+      const filename = `candidate-${Date.now()}-${file.name}`
+      const response = await fetch(`/api/upload?filename=${encodeURIComponent(filename)}`, {
+        method: "POST",
+        body: file,
+      })
+
+      if (!response.ok) {
+        throw new Error("Upload failed")
+      }
+
+      const { url } = await response.json()
+      setPreviewUrl(url)
+      setFormData((prev) => ({ ...prev, photo: url }))
+      toast.success("Foto berhasil diupload")
+    } catch (error) {
+      console.error("Upload error:", error)
+      toast.error("Gagal mengupload foto")
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const handleCreate = async () => {
@@ -105,7 +146,7 @@ export default function KandidatPage() {
               <AvatarFallback className="bg-primary text-primary-foreground">{candidate.orderNumber}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-base">{candidate.name}</CardTitle>
+              <CardTitle className="text-base">{candidate.chairmanName} & {candidate.viceChairmanName}</CardTitle>
               <CardDescription>Kandidat No. {candidate.orderNumber}</CardDescription>
             </div>
           </div>
@@ -132,13 +173,15 @@ export default function KandidatPage() {
             onClick={() => {
               setSelectedCandidate(candidate)
               setFormData({
-                name: candidate.name,
+                chairmanName: candidate.chairmanName,
+                viceChairmanName: candidate.viceChairmanName,
                 photo: candidate.photo || "",
                 visi: candidate.visi || "",
                 misi: candidate.misi || "",
                 type: candidate.type as "OSIS" | "MPK",
                 orderNumber: candidate.orderNumber,
               })
+              setPreviewUrl(candidate.photo || "")
               setIsEditOpen(true)
             }}
           >
@@ -303,23 +346,41 @@ export default function KandidatPage() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Nama Kandidat</Label>
-                <Input
-                  id="name"
-                  placeholder="Nama lengkap kandidat"
-                  value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="chairmanName">Nama Ketua</Label>
+                  <Input
+                    id="chairmanName"
+                    placeholder="Nama ketua"
+                    value={formData.chairmanName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, chairmanName: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="viceChairmanName">Nama Wakil</Label>
+                  <Input
+                    id="viceChairmanName"
+                    placeholder="Nama wakil"
+                    value={formData.viceChairmanName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, viceChairmanName: e.target.value }))}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="photo">URL Foto (opsional)</Label>
+                <Label htmlFor="photo">Foto (opsional)</Label>
                 <Input
                   id="photo"
-                  placeholder="https://example.com/foto.jpg"
-                  value={formData.photo}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, photo: e.target.value }))}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUpload}
+                  disabled={isUploading}
                 />
+                {isUploading && <p className="text-sm text-muted-foreground">Mengupload...</p>}
+                {previewUrl && (
+                  <div className="mt-2">
+                    <img src={previewUrl} alt="Preview" className="w-20 h-20 object-cover rounded" />
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="visi">Visi (opsional)</Label>
@@ -366,7 +427,7 @@ export default function KandidatPage() {
           open={isDeleteOpen}
           onOpenChange={setIsDeleteOpen}
           title="Hapus Kandidat"
-          description={`Apakah Anda yakin ingin menghapus kandidat "${selectedCandidate?.name}"? Semua data suara untuk kandidat ini akan ikut terhapus.`}
+          description={`Apakah Anda yakin ingin menghapus kandidat "${selectedCandidate?.chairmanName} & ${selectedCandidate?.viceChairmanName}"? Semua data suara untuk kandidat ini akan ikut terhapus.`}
           confirmText="Hapus"
           onConfirm={handleDelete}
           isDestructive

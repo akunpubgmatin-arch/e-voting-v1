@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -45,18 +44,22 @@ model Periode {
 }
 
 model Candidate {
-  id        String   @id @default(cuid())
-  name      String
-  photo     String?
-  visi      String?
-  misi      String?
-  type      String   // "OSIS" or "MPK"
-  orderNumber Int    @default(1)
-  periodeId String
-  periode   Periode  @relation(fields: [periodeId], references: [id], onDelete: Cascade)
-  votes     Vote[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  chairmanName     String   // Nama Calon Ketua
+  viceChairmanName String   // Nama Calon Wakil (Field Baru)
+  
+  photo            String?  // Foto tetap satu (biasanya foto berdua)
+  visi             String?
+  misi             String?
+  type             String   // "OSIS" or "MPK"
+  orderNumber      Int      @default(1)
+  
+  periodeId        String
+  periode          Periode  @relation(fields: [periodeId], references: [id], onDelete: Cascade)
+  
+  votes            Vote[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([periodeId])
   @@index([type])

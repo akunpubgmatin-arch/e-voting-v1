@@ -35,13 +35,14 @@ export async function POST(req: Request) {
 
     const data = await req.json()
 
-    if (!data.name || !data.periodeId || !data.type) {
-      return NextResponse.json({ message: "Nama, periode, dan tipe harus diisi" }, { status: 400 })
+    if (!data.chairmanName || !data.viceChairmanName || !data.periodeId || !data.type) {
+      return NextResponse.json({ message: "Nama ketua, nama wakil, periode, dan tipe harus diisi" }, { status: 400 })
     }
 
     const candidate = await prisma.candidate.create({
       data: {
-        name: data.name,
+        chairmanName: data.chairmanName,
+        viceChairmanName: data.viceChairmanName,
         photo: data.photo || null,
         visi: data.visi || null,
         misi: data.misi || null,

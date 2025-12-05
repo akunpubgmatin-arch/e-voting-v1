@@ -5,7 +5,7 @@ import type React from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 
-interface Column<T> {
+export interface Column<T> {
   key: string
   header: string
   cell?: (item: T) => React.ReactNode
@@ -19,7 +19,7 @@ interface DataTableProps<T> {
   emptyMessage?: string
 }
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T>({
   columns,
   data,
   isLoading = false,
@@ -78,7 +78,7 @@ export function DataTable<T extends Record<string, unknown>>({
               <TableRow key={index}>
                 {columns.map((column) => (
                   <TableCell key={column.key} className={column.className}>
-                    {column.cell ? column.cell(item) : (item[column.key] as React.ReactNode)}
+                    {column.cell ? column.cell(item) : ((item as any)[column.key] as React.ReactNode)}
                   </TableCell>
                 ))}
               </TableRow>

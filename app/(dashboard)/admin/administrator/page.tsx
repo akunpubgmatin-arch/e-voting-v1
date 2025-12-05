@@ -4,7 +4,7 @@ import { useState } from "react"
 import { DashboardHeader } from "@/components/sidebar/dashboard-header"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { DataTable } from "@/components/ui/data-table"
+import { DataTable, Column } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import {
@@ -68,7 +68,7 @@ export default function AdministratorPage() {
     setNewPassword("")
   }
 
-  const columns = [
+  const columns: Column<User>[] = [
     {
       key: "username",
       header: "Username",
@@ -140,7 +140,7 @@ export default function AdministratorPage() {
           </Button>
         </PageHeader>
 
-        <DataTable columns={columns} data={adminUsers} isLoading={isLoading} emptyMessage="Belum ada administrator" />
+        <DataTable<User> columns={columns} data={adminUsers} isLoading={isLoading} emptyMessage="Belum ada administrator" />
 
         {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

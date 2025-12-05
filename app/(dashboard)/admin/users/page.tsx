@@ -6,7 +6,7 @@ import { useState, useRef } from "react"
 import { DashboardHeader } from "@/components/sidebar/dashboard-header"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { DataTable } from "@/components/ui/data-table"
+import { DataTable, Column } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import {
@@ -125,7 +125,7 @@ export default function UsersPage() {
     XLSX.writeFile(wb, "template_import_pemilih.xlsx")
   }
 
-  const columns = [
+  const columns: Column<User>[] = [
     {
       key: "username",
       header: "Username",
@@ -217,7 +217,7 @@ export default function UsersPage() {
           </div>
         </PageHeader>
 
-        <DataTable columns={columns} data={voterUsers} isLoading={isLoading} emptyMessage="Belum ada data pemilih" />
+        <DataTable<User> columns={columns} data={voterUsers} isLoading={isLoading} emptyMessage="Belum ada data pemilih" />
 
         {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

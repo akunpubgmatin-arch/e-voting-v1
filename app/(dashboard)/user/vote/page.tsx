@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils"
 
 interface Candidate {
   id: string
-  name: string
+  chairmanName: string
+  viceChairmanName: string
   photo: string | null
   visi: string | null
   misi: string | null
@@ -92,7 +93,7 @@ export default function VotePage() {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <CardTitle className="text-lg">{candidate.name}</CardTitle>
+            <CardTitle className="text-lg">{candidate.chairmanName} & {candidate.viceChairmanName}</CardTitle>
             <CardDescription>Kandidat No. {candidate.orderNumber}</CardDescription>
           </div>
           {isSelected && <CheckCircle className="h-6 w-6 text-primary" />}
@@ -265,7 +266,7 @@ export default function VotePage() {
           open={!!confirmType}
           onOpenChange={(open) => !open && setConfirmType(null)}
           title={`Konfirmasi Pilihan ${confirmType}`}
-          description={`Apakah Anda yakin ingin memilih ${getSelectedCandidate()?.name} sebagai kandidat ${confirmType}? Pilihan tidak dapat diubah setelah dikonfirmasi.`}
+          description={`Apakah Anda yakin ingin memilih ${getSelectedCandidate()?.chairmanName} & ${getSelectedCandidate()?.viceChairmanName} sebagai kandidat ${confirmType}? Pilihan tidak dapat diubah setelah dikonfirmasi.`}
           confirmText="Ya, Pilih Kandidat Ini"
           onConfirm={handleVote}
           isLoading={submitVote.isPending}

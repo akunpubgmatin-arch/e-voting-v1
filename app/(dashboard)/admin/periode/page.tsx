@@ -4,7 +4,7 @@ import { useState } from "react"
 import { DashboardHeader } from "@/components/sidebar/dashboard-header"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { DataTable } from "@/components/ui/data-table"
+import { DataTable, Column } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import {
@@ -75,7 +75,7 @@ export default function PeriodePage() {
     })
   }
 
-  const columns = [
+  const columns: Column<Periode>[] = [
     {
       key: "name",
       header: "Nama Periode",
@@ -156,7 +156,7 @@ export default function PeriodePage() {
           </Button>
         </PageHeader>
 
-        <DataTable columns={columns} data={periodes || []} isLoading={isLoading} emptyMessage="Belum ada periode" />
+        <DataTable<Periode> columns={columns} data={periodes || []} isLoading={isLoading} emptyMessage="Belum ada periode" />
 
         {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

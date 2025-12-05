@@ -5,7 +5,8 @@ import { toast } from "sonner"
 
 export interface Candidate {
   id: string
-  name: string
+  chairmanName: string
+  viceChairmanName: string
   photo: string | null
   visi: string | null
   misi: string | null

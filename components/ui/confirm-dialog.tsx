@@ -21,6 +21,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void
   isDestructive?: boolean
   isLoading?: boolean
+  children?: React.ReactNode
 }
 
 export function ConfirmDialog({
@@ -33,6 +34,7 @@ export function ConfirmDialog({
   onConfirm,
   isDestructive = false,
   isLoading = false,
+  children,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -40,6 +42,7 @@ export function ConfirmDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
+          {children}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>{cancelText}</AlertDialogCancel>

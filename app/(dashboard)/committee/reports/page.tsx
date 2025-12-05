@@ -5,12 +5,12 @@ import { DashboardHeader } from "@/components/sidebar/dashboard-header"
 import { PageHeader } from "@/components/ui/page-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { DataTable } from "@/components/ui/data-table"
+import { DataTable, Column } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { usePeriodes } from "@/lib/hooks/use-periodes"
-import { useUsers } from "@/lib/hooks/use-users"
+import { useUsers, User } from "@/lib/hooks/use-users"
 import { useQuickCount } from "@/lib/hooks/use-voting"
 import { FileSpreadsheet, FileText, Download, Users } from "lucide-react"
 import * as XLSX from "xlsx"
@@ -33,11 +33,11 @@ export default function CommitteeReportsPage() {
 
   const voters = users?.filter((u) => ["USER", "TEACHER"].includes(u.role)) || []
 
-  const columns = [
+  const columns: Column<User>[] = [
     {
       key: "username",
       header: "Username",
-      cell: (user: (typeof voters)[0]) => <span className="font-medium">{user.username}</span>,
+      cell: (user: User) => <span className="font-medium">{user.username}</span>,
     },
     {
       key: "fullName",
@@ -46,7 +46,7 @@ export default function CommitteeReportsPage() {
     {
       key: "role",
       header: "Role",
-      cell: (user: (typeof voters)[0]) => (
+      cell: (user: User) => (
         <Badge variant={user.role === "TEACHER" ? "default" : "secondary"}>
           {user.role === "TEACHER" ? "Guru" : "Siswa"}
         </Badge>
@@ -55,14 +55,14 @@ export default function CommitteeReportsPage() {
     {
       key: "hasVotedOsis",
       header: "OSIS",
-      cell: (user: (typeof voters)[0]) => (
+      cell: (user: User) => (
         <Badge variant={user.hasVotedOsis ? "default" : "outline"}>{user.hasVotedOsis ? "Sudah" : "Belum"}</Badge>
       ),
     },
     {
       key: "hasVotedMpk",
       header: "MPK",
-      cell: (user: (typeof voters)[0]) => (
+      cell: (user: User) => (
         <Badge variant={user.hasVotedMpk ? "default" : "outline"}>{user.hasVotedMpk ? "Sudah" : "Belum"}</Badge>
       ),
     },
@@ -187,7 +187,7 @@ export default function CommitteeReportsPage() {
         })
 
       const pdfBytes = await pdfDoc.save()
-      const blob = new Blob([pdfBytes], { type: "application/pdf" })
+      const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
@@ -273,7 +273,7 @@ export default function CommitteeReportsPage() {
                 <CardDescription>Status voting semua pemilih terdaftar</CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable
+                <DataTable<User>
                   columns={columns}
                   data={voters}
                   isLoading={usersLoading}

@@ -35,7 +35,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const candidate = await prisma.candidate.update({
       where: { id },
       data: {
-        name: data.name,
+        chairmanName: data.chairmanName,
+        viceChairmanName: data.viceChairmanName,
         photo: data.photo,
         visi: data.visi,
         misi: data.misi,
