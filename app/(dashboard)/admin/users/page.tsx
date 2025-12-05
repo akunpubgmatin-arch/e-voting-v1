@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef } from "react"
 import { DashboardHeader } from "@/components/sidebar/dashboard-header"
 import { PageHeader } from "@/components/ui/page-header"
@@ -30,11 +29,13 @@ import {
   useImportUsers,
   type User,
 } from "@/lib/hooks/use-users"
-import { Plus, MoreHorizontal, Trash2, KeyRound, Upload, FileSpreadsheet, RotateCcw, AlertTriangle } from "lucide-react"
+import { Plus, MoreHorizontal, Trash2, KeyRound, Upload, FileSpreadsheet, RotateCcw, AlertTriangle, Printer, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
-import * as XLSX from "xlsx"
 import { Separator } from "@/components/ui/separator"
-import { useMutation, useQueryClient } from "@tanstack/react-query" // Import React Query
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { downloadUserTemplate } from "@/lib/excel/user-template"
+import { generateUserListPDF } from "@/lib/pdf/user-list"
+import { parseUsersFromExcel } from "@/lib/excel/parser"
 
 export default function UsersPage() {
   const { data: users, isLoading } = useUsers()
@@ -42,7 +43,7 @@ export default function UsersPage() {
   const deleteUser = useDeleteUser()
   const resetPassword = useResetPassword()
   const importUsers = useImportUsers()
-  const queryClient = useQueryClient() // Untuk refresh data setelah reset
+  const queryClient = useQueryClient()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -50,12 +51,9 @@ export default function UsersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isResetOpen, setIsResetOpen] = useState(false)
-  
-  // State Reset Voting
-  const [isResetVoteOpen, setIsResetVoteOpen] = useState(false) // Single user reset
-  const [isResetAllOpen, setIsResetAllOpen] = useState(false) // Reset all
-  const [resetConfirmationText, setResetConfirmationText] = useState("") // Input validasi RESET
-
+  const [isResetVoteOpen, setIsResetVoteOpen] = useState(false)
+  const [isResetAllOpen, setIsResetAllOpen] = useState(false)
+  const [resetConfirmationText, setResetConfirmationText] = useState("") 
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [newPassword, setNewPassword] = useState("")
   const [formData, setFormData] = useState({
@@ -65,43 +63,42 @@ export default function UsersPage() {
     role: "USER",
   })
 
+  // Filter User & Teacher Only
   const voterUsers = users?.filter((u) => ["USER", "TEACHER"].includes(u.role)) || []
 
-  // --- MUTATION: Reset Single User Vote ---
+  // --- MUTATION: Reset Vote ---
   const resetUserVote = useMutation({
     mutationFn: async (userId: string) => {
-      const res = await fetch(`/api/users/${userId}/reset-vote`, { method: "POST" })
-      if (!res.ok) throw new Error("Gagal mereset voting user")
-      return res.json()
+        const res = await fetch(`/api/users/${userId}/reset-vote`, { method: "POST" })
+        if (!res.ok) throw new Error("Gagal mereset voting user")
+        return res.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-      toast.success("Status voting user berhasil direset")
-      setIsResetVoteOpen(false)
-      setSelectedUser(null)
+        queryClient.invalidateQueries({ queryKey: ["users"] })
+        toast.success("Status voting user berhasil direset")
+        setIsResetVoteOpen(false)
+        setSelectedUser(null)
     },
     onError: () => toast.error("Gagal mereset voting user"),
   })
 
-  // --- MUTATION: Reset ALL Votes ---
   const resetAllVotes = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/voting/reset-all`, { method: "POST" })
-      if (!res.ok) throw new Error("Gagal mereset semua data voting")
-      return res.json()
+        const res = await fetch(`/api/voting/reset-all`, { method: "POST" })
+        if (!res.ok) throw new Error("Gagal mereset semua data voting")
+        return res.json()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] }) // Refresh stats dashboard juga
-      toast.success("Semua data voting berhasil direset")
-      setIsResetAllOpen(false)
-      setResetConfirmationText("")
+        queryClient.invalidateQueries({ queryKey: ["users"] })
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] })
+        toast.success("Semua data voting berhasil direset")
+        setIsResetAllOpen(false)
+        setResetConfirmationText("")
     },
     onError: () => toast.error("Gagal mereset data voting"),
   })
 
   // --- HANDLERS ---
-
   const handleCreate = async () => {
     if (!formData.username || !formData.password || !formData.fullName) {
       toast.error("Semua field harus diisi")
@@ -133,7 +130,6 @@ export default function UsersPage() {
   }
 
   const handleResetAllVotes = async () => {
-    // Validasi Teks "RESET"
     if (resetConfirmationText !== "RESET") {
       toast.error("Konfirmasi gagal. Ketik 'RESET' dengan huruf besar.")
       return
@@ -146,26 +142,22 @@ export default function UsersPage() {
     if (!file) return
 
     try {
-      const data = await file.arrayBuffer()
-      const workbook = XLSX.read(data)
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-      const jsonData = XLSX.utils.sheet_to_json<{ username: string; fullName: string; role?: string }>(worksheet)
+        const result = await parseUsersFromExcel(file)
+        
+        if (!result.success) {
+            result.errors.forEach(err => toast.error(err))
+            return
+        }
+        
+        if (result.warnings.length > 0) {
+            result.warnings.forEach(warn => toast.warning(warn))
+        }
 
-      if (jsonData.length === 0) {
-        toast.error("File Excel kosong")
-        return
-      }
-
-      const validData = jsonData.filter((row) => row.username && row.fullName)
-
-      if (validData.length === 0) {
-        toast.error("Tidak ada data valid. Pastikan kolom 'username' dan 'fullName' ada")
-        return
-      }
-
-      await importUsers.mutateAsync(validData)
-    } catch {
-      toast.error("Gagal membaca file Excel")
+        await importUsers.mutateAsync(result.data)
+        
+    } catch (e) {
+        console.error(e)
+        toast.error("Gagal membaca file")
     }
 
     if (fileInputRef.current) {
@@ -173,27 +165,13 @@ export default function UsersPage() {
     }
   }
 
-  const downloadTemplate = () => {
-    const template = [
-      { username: "siswa001", fullName: "Nama Siswa 1", role: "USER" },
-      { username: "guru001", fullName: "Nama Guru 1", role: "TEACHER" },
-    ]
-    const ws = XLSX.utils.json_to_sheet(template)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Template")
-    XLSX.writeFile(wb, "template_import_pemilih.xlsx")
-  }
-
   const columns: Column<User>[] = [
     {
       key: "username",
-      header: "Username",
+      header: "NISN / NIP",
       cell: (user: User) => <span className="font-medium">{user.username}</span>,
     },
-    {
-      key: "fullName",
-      header: "Nama Lengkap",
-    },
+    { key: "fullName", header: "Nama Lengkap" },
     {
       key: "role",
       header: "Role",
@@ -206,101 +184,113 @@ export default function UsersPage() {
     {
       key: "hasVotedOsis",
       header: "Voted OSIS",
-      cell: (user: User) => (
-        <Badge variant={user.hasVotedOsis ? "default" : "outline"}>{user.hasVotedOsis ? "Sudah" : "Belum"}</Badge>
-      ),
+      cell: (user: User) => <Badge variant={user.hasVotedOsis ? "default" : "outline"}>{user.hasVotedOsis ? "Sudah" : "Belum"}</Badge>,
     },
     {
       key: "hasVotedMpk",
       header: "Voted MPK",
-      cell: (user: User) => (
-        <Badge variant={user.hasVotedMpk ? "default" : "outline"}>{user.hasVotedMpk ? "Sudah" : "Belum"}</Badge>
-      ),
+      cell: (user: User) => <Badge variant={user.hasVotedMpk ? "default" : "outline"}>{user.hasVotedMpk ? "Sudah" : "Belum"}</Badge>,
     },
     {
-      key: "actions",
-      header: "",
-      cell: (user: User) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-white">
-            <DropdownMenuItem
-              onClick={() => {
-                setSelectedUser(user)
-                setIsResetOpen(true)
-              }}
-            >
-              <KeyRound className="mr-2 h-4 w-4" />
-              Reset Password
-            </DropdownMenuItem>
-            
-            {/* Opsi Reset Vote Per User */}
-            {(user.hasVotedOsis || user.hasVotedMpk) && (
-              <DropdownMenuItem
-                className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
-                onClick={() => {
-                  setSelectedUser(user)
-                  setIsResetVoteOpen(true)
-                }}
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Voting Status
+        key: "actions",
+        header: "",
+        cell: (user: User) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-white">
+              <DropdownMenuItem onClick={() => { setSelectedUser(user); setIsResetOpen(true); }}>
+                <KeyRound className="mr-2 h-4 w-4" /> Reset Password
               </DropdownMenuItem>
-            )}
-
-            <DropdownMenuSeparator />
-            
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive focus:bg-destructive/10"
-              onClick={() => {
-                setSelectedUser(user)
-                setIsDeleteOpen(true)
-              }}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Hapus
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-      className: "w-12",
-    },
+              {(user.hasVotedOsis || user.hasVotedMpk) && (
+                <DropdownMenuItem className="text-orange-600 focus:text-orange-600 bg-orange-50" onClick={() => { setSelectedUser(user); setIsResetVoteOpen(true); }}>
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset Voting Status
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive focus:text-destructive bg-destructive/10" onClick={() => { setSelectedUser(user); setIsDeleteOpen(true); }}>
+                <Trash2 className="mr-2 h-4 w-4" /> Hapus
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+        className: "w-12",
+      },
   ]
 
   return (
     <>
       <DashboardHeader breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "Data Pemilih" }]} />
+      {/* WRAPPER UTAMA */}
       <div className="min-h-screen bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-1 flex-col gap-6">
             
+            {/* CONTAINER INDUK PUTIH */}
             <div className="flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="pb-2">
                 <PageHeader title="Data Pemilih" description="Kelola data siswa dan guru sebagai pemilih">
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Tombol Reset Semua Vote (Baru) */}
+                    
+                    {/* RESET SEMUA */}
                     <Button 
                       variant="destructive" 
                       onClick={() => setIsResetAllOpen(true)}
                       className="bg-red-600 hover:bg-red-700"
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
-                      Reset Semua Vote
+                      Reset Semua
                     </Button>
 
-                    <Button variant="outline" onClick={downloadTemplate}>
-                      <FileSpreadsheet className="mr-2 h-4 w-4" />
-                      Template
-                    </Button>
+                    {/* CETAK PDF (DROPDOWN) */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="gap-2 bg-white">
+                                <Printer className="h-4 w-4" />
+                                Cetak PDF
+                                <ChevronDown className="h-3 w-3 opacity-50" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-white" align="end">
+                            <DropdownMenuItem onClick={() => generateUserListPDF(users || [], "USER")}>
+                                Data Siswa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => generateUserListPDF(users || [], "TEACHER")}>
+                                Data Guru
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* DOWNLOAD TEMPLATE (DROPDOWN) */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="gap-2 bg-white">
+                                <FileSpreadsheet className="h-4 w-4" />
+                                Template
+                                <ChevronDown className="h-3 w-3 opacity-50" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-white" align="end">
+                            <DropdownMenuItem onClick={() => downloadUserTemplate("SISWA")}>
+                                Template Siswa (NISN)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => downloadUserTemplate("GURU")}>
+                                Template Guru (NIP)
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* IMPORT */}
                     <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importUsers.isPending}>
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importUsers.isPending} className="bg-white">
                       <Upload className="mr-2 h-4 w-4" />
                       {importUsers.isPending ? "Importing..." : "Import"}
                     </Button>
+
+                    {/* TAMBAH MANUAL */}
                     <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90">
                       <Plus className="mr-2 h-4 w-4" />
                       Tambah
@@ -331,7 +321,6 @@ export default function UsersPage() {
                 </CardContent>
               </Card>
             </div>
-
           </div>
         </div>
       </div>
@@ -347,10 +336,10 @@ export default function UsersPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Username (NISN/NIP)</Label>
                 <Input
                   id="username"
-                  placeholder="Username untuk login"
+                  placeholder="Masukkan NISN atau NIP"
                   value={formData.username}
                   onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
                   className="bg-white placeholder:text-gray-400"
@@ -447,24 +436,21 @@ export default function UsersPage() {
           isLoading={deleteUser.isPending}
         />
 
-        {/* --- FITUR BARU: RESET VOTE PER USER --- */}
+        {/* Reset Vote Confirm */}
         <ConfirmDialog
           open={isResetVoteOpen}
           onOpenChange={setIsResetVoteOpen}
           title="Reset Voting User"
-          description={`Apakah Anda yakin ingin mereset status voting untuk "${selectedUser?.fullName}"? User ini akan bisa memilih lagi (OSIS & MPK).`}
+          description={`Apakah Anda yakin ingin mereset status voting untuk "${selectedUser?.fullName}"?`}
           confirmText="Reset Voting"
           onConfirm={handleResetSingleVote}
           isDestructive
           isLoading={resetUserVote.isPending}
         />
 
-        {/* --- FITUR BARU: RESET SEMUA VOTE (DENGAN VALIDASI INPUT) --- */}
+        {/* Reset All Votes Dialog */}
         <Dialog open={isResetAllOpen} onOpenChange={(open) => {
-          if (!open) {
-            setIsResetAllOpen(false);
-            setResetConfirmationText(""); 
-          }
+          if (!open) { setIsResetAllOpen(false); setResetConfirmationText(""); }
         }}>
           <DialogContent className="bg-white max-w-md">
             <DialogHeader>
@@ -473,44 +459,23 @@ export default function UsersPage() {
                 <DialogTitle className="text-xl">Reset SEMUA Voting?</DialogTitle>
               </div>
               <DialogDescription className="text-gray-600">
-                Tindakan ini akan menghapus <strong>SELURUH DATA SUARA</strong> yang sudah masuk di database. 
-                Semua pemilih akan kembali ke status "Belum Memilih". 
-                <br /><br />
+                Tindakan ini akan menghapus <strong>SELURUH DATA SUARA</strong>.
+                <br />
                 Tindakan ini <strong>TIDAK DAPAT DIBATALKAN</strong>.
               </DialogDescription>
             </DialogHeader>
-            
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="confirmText" className="text-gray-700 font-semibold">
-                  Ketik "RESET" untuk konfirmasi:
-                </Label>
-                <Input
-                  id="confirmText"
-                  value={resetConfirmationText}
-                  onChange={(e) => setResetConfirmationText(e.target.value)}
-                  placeholder="Ketik RESET disini..."
-                  className="bg-white border-red-200 focus:border-red-500 focus:ring-red-200"
-                />
+                <Label htmlFor="confirmText" className="text-gray-700 font-semibold">Ketik "RESET" untuk konfirmasi:</Label>
+                <Input id="confirmText" value={resetConfirmationText} onChange={(e) => setResetConfirmationText(e.target.value)} placeholder="Ketik RESET disini..." className="bg-white border-red-200 focus:border-red-500 focus:ring-red-200" />
               </div>
             </div>
-
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsResetAllOpen(false)}>
-                Batal
-              </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleResetAllVotes}
-                disabled={resetAllVotes.isPending || resetConfirmationText !== "RESET"}
-                className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
-              >
-                {resetAllVotes.isPending ? "Mereset..." : "Hapus Semua Suara"}
-              </Button>
+              <Button variant="outline" onClick={() => setIsResetAllOpen(false)}>Batal</Button>
+              <Button variant="destructive" onClick={handleResetAllVotes} disabled={resetAllVotes.isPending || resetConfirmationText !== "RESET"} className="bg-red-600 hover:bg-red-700 disabled:opacity-50">{resetAllVotes.isPending ? "Mereset..." : "Hapus Semua Suara"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
     </>
   )
 }
