@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/sonner"
 import { QueryProvider } from "@/components/providers/query-provider"
 import { SessionProvider } from "@/components/providers/session-provider"
+import { ActivityTimeoutProvider } from "@/components/providers/activity-timeout-provider"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <SessionProvider>
           <QueryProvider>
+            <ActivityTimeoutProvider />
             {children}
             <Toaster richColors position="top-right" />
           </QueryProvider>
