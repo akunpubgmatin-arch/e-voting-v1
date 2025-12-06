@@ -54,10 +54,14 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
-      // KEMBALI KE STANDARD V8 (IconLeft/IconRight)
+      // REACT-DAY-PICKER V9: Menggunakan components yang benar
       components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+        Chevron: ({ orientation, ...props }) => {
+          if (orientation === "left") {
+            return <ChevronLeft className="h-4 w-4" />
+          }
+          return <ChevronRight className="h-4 w-4" />
+        },
       }}
       {...props}
     />
