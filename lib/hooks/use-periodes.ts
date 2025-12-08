@@ -68,7 +68,7 @@ export function useCreatePeriode() {
   })
 }
 
-export function useUpdatePeriode() {
+export function useUpdatePeriode(successMessage?: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -87,7 +87,7 @@ export function useUpdatePeriode() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["periodes"] })
       queryClient.invalidateQueries({ queryKey: ["active-periode"] })
-      toast.success("Periode berhasil diperbarui")
+      toast.success(successMessage || "Periode berhasil diperbarui")
     },
     onError: (error: Error) => {
       toast.error(error.message)

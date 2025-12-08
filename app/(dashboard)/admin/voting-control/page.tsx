@@ -85,6 +85,8 @@ function CountdownTimer({ endTime }: { endTime: string }) {
 export default function VotingControlPage() {
   const { data: periodes } = usePeriodes()
   const updatePeriode = useUpdatePeriode()
+  const startVotingMutation = useUpdatePeriode("Berhasil memulai voting")
+  const stopVotingMutation = useUpdatePeriode("Voting berhasil dihentikan")
   const [selectedPeriodeId, setSelectedPeriodeId] = useState<string>("")
   const { data: candidates } = useCandidates(selectedPeriodeId || undefined)
 
@@ -126,7 +128,7 @@ export default function VotingControlPage() {
       return
     }
 
-    await updatePeriode.mutateAsync({
+    await startVotingMutation.mutateAsync({
       id: selectedPeriode.id,
       data: {
         isActive: true,
@@ -139,7 +141,7 @@ export default function VotingControlPage() {
 
   const handleStopVoting = async () => {
     if (!selectedPeriode) return
-    await updatePeriode.mutateAsync({
+    await stopVotingMutation.mutateAsync({
       id: selectedPeriode.id,
       data: { isActive: false },
     })
@@ -389,8 +391,8 @@ export default function VotingControlPage() {
 
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsStartOpen(false)}>Batal</Button>
-                  <Button onClick={handleStartVoting} disabled={updatePeriode.isPending} className="min-w-[100px]">
-                    {updatePeriode.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mulai"}
+                  <Button onClick={handleStartVoting} disabled={startVotingMutation.isPending} className="min-w-[100px]">
+                    {startVotingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mulai"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -405,7 +407,7 @@ export default function VotingControlPage() {
               confirmText="Ya, Hentikan"
               onConfirm={handleStopVoting}
               isDestructive
-              isLoading={updatePeriode.isPending}
+              isLoading={stopVotingMutation.isPending}
             />
           </div>
         </div>
